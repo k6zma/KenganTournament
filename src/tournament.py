@@ -44,6 +44,7 @@ class Tournament:
 
     def simulate_tournament(self, players):
         round_number = 1
+
         while len(players) > 1:
             next_round = []
             for i in range(0, len(players), 2):
@@ -51,8 +52,10 @@ class Tournament:
                 prob_p1_wins = self.data.loc[p1, p2]
                 prob_p2_wins = self.data.loc[p2, p1]
                 next_round.append(p1 if prob_p2_wins < prob_p1_wins else p2)
+
             players = next_round
             round_number += 1
+
         return players[0]
 
     def find_best_position_for_player(self, player_name):
@@ -60,16 +63,20 @@ class Tournament:
         position_counts = Counter()
         position_simulations = Counter()
         total_simulations = 0
+
         for perm in permutations(players):
             simulate_order = list(perm)
             winner = self.simulate_tournament(simulate_order)
             position = simulate_order.index(player_name) + 1
             position_simulations[position] += 1
+
             if winner == player_name:
                 position_counts[position] += 1
             total_simulations += 1
+
         position_probabilities = {
             position: position_counts[position] / position_simulations[position]
             for position in position_simulations
         }
+
         return position_probabilities
