@@ -1,4 +1,3 @@
-import random
 import numpy as np
 from itertools import permutations
 from collections import Counter
@@ -20,24 +19,20 @@ class Tournament:
 
         return heroes_from_columns
 
-    @staticmethod
     def _compare_heroes(heroes_from_columns, heroes_from_rows):
         if set(heroes_from_columns) != set(heroes_from_rows):
             raise ValueError("Имена героев в строках и столбцах не совпадают")
 
-    @staticmethod
     def _check_heroes_count(heroes):
         heroes_count = len(heroes)
         if heroes_count == 0 or (heroes_count & (heroes_count - 1)) != 0:
             raise ValueError("Количество героев должно быть степенью двойки")
 
-    @staticmethod
     def _check_heroes_empty_names(heroes):
         for hero in heroes:
             if hero.strip() == "":
                 raise ValueError("Имя героя не может быть пустым")
 
-    @staticmethod
     def _check_for_unique_heroes(heroes):
         if len(heroes) != len(set(heroes)):
             raise ValueError("Имена героев должны быть уникальными")
