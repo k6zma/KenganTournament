@@ -1,16 +1,19 @@
-import numpy as np
 from itertools import permutations
 from collections import Counter
+from math import factorial
+
+import numpy as np
+
+from tqdm import tqdm
 
 
 class Tournament:
     def __init__(self, data):
         self.data = data
 
-    @staticmethod
-    def collect_heroes(data):
-        heroes_from_columns = data.columns.tolist()
-        heroes_from_rows = data.index.tolist()
+    def collect_heroes(self):
+        heroes_from_columns = self.data.columns.tolist()
+        heroes_from_rows = self.data.index.tolist()
 
         Tournament._compare_heroes(heroes_from_columns, heroes_from_rows)
         Tournament._check_heroes_count(heroes_from_columns)
@@ -38,30 +41,48 @@ class Tournament:
             raise ValueError("Имена героев должны быть уникальными")
 
     def simulate_tournament(self, players):
-        round_number = 1
+        tournament_details = []
 
+        round_number = 1
         while len(players) > 1:
+            round_info = []
             next_round = []
             for i in range(0, len(players), 2):
-                p1, p2 = players[i], players[i + 1]
-                prob_p1_wins = self.data.loc[p1, p2]
-                prob_p2_wins = self.data.loc[p2, p1]
-                next_round.append(p1 if prob_p2_wins < prob_p1_wins else p2)
+                match = {
+                    "round": round_number,
+                    "player1": players[i],
+                    "player2": players[i + 1],
+                    "winner": None,
+                }
 
+                prob_p1_wins = self.data.loc[players[i], players[i + 1]]
+                prob_p2_wins = self.data.loc[players[i + 1], players[i]]
+
+                winner = players[i] if prob_p2_wins < prob_p1_wins else players[i + 1]
+                match["winner"] = winner
+
+                round_info.append(match)
+                next_round.append(winner)
+
+            tournament_details.append(round_info)
             players = next_round
             round_number += 1
 
-        return players[0]
+        return tournament_details, players[0]
 
     def find_best_position_for_player(self, player_name):
         players = list(self.data.columns)
+        total_permutations = factorial(len(players))
+
         position_counts = Counter()
         position_simulations = Counter()
         total_simulations = 0
 
-        for perm in permutations(players):
+        for perm in tqdm(
+            permutations(players), total=total_permutations, desc="Поиск лучшей позиции"
+        ):
             simulate_order = list(perm)
-            winner = self.simulate_tournament(simulate_order)
+            _, winner = self.simulate_tournament(simulate_order)
             position = simulate_order.index(player_name) + 1
             position_simulations[position] += 1
 
