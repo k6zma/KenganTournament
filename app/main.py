@@ -6,6 +6,7 @@ from src.generating_image_tt import TournamentTableGenerator
 import pandas as pd
 import random
 from tqdm import tqdm
+from itertools import permutations
 
 def random_distribution(players, total_positions):
     all_positions = list(range(total_positions))
@@ -15,6 +16,24 @@ def random_distribution(players, total_positions):
     distributed_players = dict(zip(chosen_positions, players[:random_count]))
     remaining_players = players[random_count:]
     return distributed_players, remaining_players
+
+def calculate_win_probability(player_name, position, data):
+    players = data.columns
+    position_counts = 0
+    total_simulations = 0
+    
+    for perm in permutations(players):
+        simulate_order = list(perm)
+        simulate_order[position] = player_name
+        tournament = Tournament(data)
+        _, winner = tournament.simulate_tournament(simulate_order)
+        
+        if winner == player_name:
+            position_counts += 1
+        total_simulations += 1
+        
+    probability = position_counts / total_simulations if total_simulations > 0 else 0
+    return probability
 
 def main():
     choice = input("Вы хотите использовать собственные данные? (да/нет): ").strip().lower()
@@ -51,7 +70,9 @@ def main():
 
     print("\nИтоговое распределение игроков по позициям:")
     for position in sorted(distributed_players.keys()):
-        print(f"Позиция {position + 1}: {distributed_players[position]}")
+        player = distributed_players[position]
+        probability = calculate_win_probability(player, position, data)
+        print(f"Позиция {position + 1}: {player} (Вероятность победы: {probability:.2%})")
 
     final_players_order = [distributed_players[i] for i in range(total_positions)]
 
