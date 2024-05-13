@@ -4,6 +4,17 @@ from src.generate_synthetic_data import TournamentMatrix
 from src.generating_image_tt import TournamentTableGenerator
 
 import pandas as pd
+import random
+from tqdm import tqdm
+
+def random_distribution(players, total_positions):
+    all_positions = list(range(total_positions))
+    random_count = random.randint(1, len(players))
+    chosen_positions = random.sample(all_positions, random_count)
+    random.shuffle(players)
+    distributed_players = dict(zip(chosen_positions, players[:random_count]))
+    remaining_players = players[random_count:]
+    return distributed_players, remaining_players
 
 def main():
     choice = input("Вы хотите использовать собственные данные? (да/нет): ").strip().lower()
@@ -19,32 +30,32 @@ def main():
 
     tournament = Tournament(data)
     heroes = tournament.collect_heroes()
-    print("Идеальные позиции и вероятности победы для каждого игрока:")
-    for hero in heroes:
-        probabilities = tournament.find_best_position_for_player(hero)
-        print(f"{hero}: {probabilities}")
+    total_positions = len(heroes)
 
-    print("\nВыберите игрока по номеру:")
-    for index, hero in enumerate(heroes, start=1):
-        print(f"{index}: {hero}")
-    player_index = int(input()) - 1
-    if player_index < 0 or player_index >= len(heroes):
-        print("Неверный выбор игрока.")
-        return
+    distributed_players, remaining_players = random_distribution(heroes, total_positions)
 
-    player_name = heroes[player_index]
+    print("Случайно распределенные игроки по позициям:")
+    for position, player in distributed_players.items():
+        print(f"Позиция {position + 1}: {player}")
 
-    print("Выберите новую позицию игрока:")
-    position = int(input())
-    if position < 1 or position > len(heroes):
-        print("Неверная позиция.")
-        return
+    optimal_positions = {}
+    print("\nПоиск оптимальных позиций для оставшихся игроков:")
+    for player in tqdm(remaining_players, desc="Обработка игроков"):
+        best_position, reason = tournament.find_best_position_for_player(player, distributed_players)
+        distributed_players[best_position] = player
+        optimal_positions[player] = (best_position, reason)
 
-    players = heroes[:]
-    players.remove(player_name)
-    players.insert(position - 1, player_name)
+    print("\nИгроки, для которых выбраны оптимальные места:")
+    for player, (position, reason) in optimal_positions.items():
+        print(f"Игрок: {player}, Оптимальная позиция: {position + 1}, Причина: {reason}")
 
-    tournament_details, winner = tournament.simulate_tournament(players)
+    print("\nИтоговое распределение игроков по позициям:")
+    for position in sorted(distributed_players.keys()):
+        print(f"Позиция {position + 1}: {distributed_players[position]}")
+
+    final_players_order = [distributed_players[i] for i in range(total_positions)]
+
+    tournament_details, winner = tournament.simulate_tournament(final_players_order)
 
     for round_details in tournament_details:
         print(f"\nРаунд {round_details[0]['round']}:")
@@ -55,7 +66,7 @@ def main():
     generator = TournamentTableGenerator(tournament_details, winner)
     tournament_image = generator.generate()
     tournament_image.show()
-    tournament_image.save("images/tournament.png")
+    tournament_image.save("imgs/tournament.png")
 
 if __name__ == "__main__":
     main()

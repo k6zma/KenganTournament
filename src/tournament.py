@@ -3,9 +3,7 @@ from collections import Counter
 from math import factorial
 
 import numpy as np
-
 from tqdm import tqdm
-
 
 class Tournament:
     def __init__(self, data):
@@ -70,29 +68,44 @@ class Tournament:
 
         return tournament_details, players[0]
 
-    def find_best_position_for_player(self, player_name):
+    def find_best_position_for_player(self, player_name, distributed_players):
         players = list(self.data.columns)
+        free_positions = [pos for pos in range(len(players)) if pos not in distributed_players]
         total_permutations = factorial(len(players))
 
-        position_counts = Counter()
-        position_simulations = Counter()
-        total_simulations = 0
+        best_position = None
+        best_probability = -1
+        reasons = []
 
-        for perm in tqdm(
-            permutations(players), total=total_permutations, desc="Поиск лучшей позиции"
-        ):
-            simulate_order = list(perm)
-            _, winner = self.simulate_tournament(simulate_order)
-            position = simulate_order.index(player_name) + 1
-            position_simulations[position] += 1
+        for position in free_positions:
+            position_counts = Counter()
+            position_simulations = Counter()
+            total_simulations = 0
 
-            if winner == player_name:
-                position_counts[position] += 1
-            total_simulations += 1
+            for perm in permutations(players):
+                simulate_order = list(perm)
+                simulate_order[position] = player_name
+                _, winner = self.simulate_tournament(simulate_order)
+                current_position = simulate_order.index(player_name)
+                position_simulations[current_position] += 1
 
-        position_probabilities = {
-            position: position_counts[position] / position_simulations[position]
-            for position in position_simulations
-        }
+                if winner == player_name:
+                    position_counts[current_position] += 1
+                total_simulations += 1
 
-        return position_probabilities
+            position_probability = (
+                position_counts[position] / position_simulations[position]
+                if position_simulations[position] > 0
+                else 0
+            )
+
+            reasons.append(
+                f"Позиция {position + 1}: {position_probability:.2%} вероятность победы"
+            )
+
+            if position_probability > best_probability:
+                best_probability = position_probability
+                best_position = position
+
+        reason = "\n".join(reasons)
+        return best_position, reason
