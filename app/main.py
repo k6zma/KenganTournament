@@ -35,6 +35,12 @@ def calculate_win_probability(player_name, position, data):
     probability = position_counts / total_simulations if total_simulations > 0 else 0
     return probability
 
+def normalize_probabilities(player_probabilities):
+    total_probability = sum(player_probabilities.values())
+    for player in player_probabilities:
+        player_probabilities[player] /= total_probability
+    return player_probabilities
+
 def main():
     choice = input("Вы хотите использовать собственные данные? (да/нет): ").strip().lower()
     if choice == 'да':
@@ -68,11 +74,17 @@ def main():
     for player, (position, reason) in optimal_positions.items():
         print(f"Игрок: {player}, Оптимальная позиция: {position + 1}, Причина: {reason}")
 
-    print("\nИтоговое распределение игроков по позициям:")
+    player_probabilities = {}
     for position in sorted(distributed_players.keys()):
         player = distributed_players[position]
         probability = calculate_win_probability(player, position, data)
-        print(f"Позиция {position + 1}: {player} (Вероятность победы: {probability:.2%})")
+        player_probabilities[player] = probability
+
+    normalized_probabilities = normalize_probabilities(player_probabilities)
+
+    print("\nИтоговое распределение игроков по позициям:")
+    for player, probability in normalized_probabilities.items():
+        print(f"Игрок {player} (Вероятность победы: {probability:.2%})")
 
     final_players_order = [distributed_players[i] for i in range(total_positions)]
 
